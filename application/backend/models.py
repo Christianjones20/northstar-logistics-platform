@@ -6,5 +6,5 @@ class orderCreate(BaseModel):
     customer_email: str
     origin: str
     destination: str
-    destination: str
+    weight: float
     shipment_type: str
