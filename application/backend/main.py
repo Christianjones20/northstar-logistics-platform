@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends
-from models import orderCreate
+from models import orderCreate, orderResponse
 from database import engine
 from sqlalchemy.orm import Session
 from database import SessionLocal
@@ -33,7 +33,7 @@ app = FastAPI()
 def health_check():
     return {"status": "healthy"}
 
-@app.post("/orders")
+@app.post("/orders", response_model=orderResponse, status_code=201)
 def create_order(order: orderCreate, db: Session = Depends(get_db)):
     weighted_cost = calculate_weighted_cost(order.weight, order.shipment_type)
     price = weighted_cost * 1.2  # Assuming a 20% markup for the final price
@@ -53,3 +53,15 @@ def create_order(order: orderCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_order)
     return new_order
+
+@app.get("/orders", response_model=list[orderResponse])
+def get_orders(db: Session = Depends(get_db)):
+    orders = db.query(db_models.Order).all()
+    return orders
+
+@app.get("/orders/{order_id}", response_model=orderResponse)
+def get_order(order_id: int, db: Session = Depends(get_db)):
+    order = db.query(db_models.Order).filter(db_models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return order
