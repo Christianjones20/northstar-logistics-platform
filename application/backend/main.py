@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends
-from models import orderCreate, orderResponse
+from models import orderCreate, orderResponse, orderUpdate
 from database import engine
 from sqlalchemy.orm import Session
 from database import SessionLocal
@@ -64,4 +64,17 @@ def get_order(order_id: int, db: Session = Depends(get_db)):
     order = db.query(db_models.Order).filter(db_models.Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    return order
+
+@app.patch("/orders/{order_id}", response_model=orderResponse)
+def update_order(order_id: int, order_update: orderUpdate, db: Session = Depends(get_db)):
+    order = db.query(db_models.Order).filter(db_models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    for key, value in order_update.dict(exclude_unset=True).items():
+        setattr(order, key, value)
+
+    db.commit()
+    db.refresh(order)
     return order
