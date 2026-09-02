@@ -47,7 +47,7 @@ def create_order(order: orderCreate, db: Session = Depends(get_db)):
         shipment_type=order.shipment_type,
         weighted_cost=weighted_cost,
         price=price,
-        status="pending"
+        status="Pending"
     )
     db.add(new_order)
     db.commit()
@@ -75,6 +75,40 @@ def update_order(order_id: int, order_update: orderUpdate, db: Session = Depends
     for key, value in order_update.dict(exclude_unset=True).items():
         setattr(order, key, value)
 
+    db_order.price = calculate_weighted_cost(order.weight, order.shipment_type) * 1.2  # Recalculate price if weight or shipment_type changed
+
     db.commit()
     db.refresh(order)
     return order
+
+@app.delete("/orders/{order_id}", status_code=204)
+def delete_order(order_id: int, db: Session = Depends(get_db)):
+
+    order = (
+        db.query(db_models.Order)
+        .filter(db_models.Order.id == order_id)
+        .first()
+    )
+
+    if order is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Order not found"
+        )
+
+    if order.status == "cancelled":
+        raise HTTPException(
+            status_code=400,
+            detail="Order is already cancelled"
+        )
+
+    if order.status == "SHIPPED" or order.status == "IN_TRANSIT":
+        raise HTTPException(
+            status_code=400,
+            detail="Shipped orders cannot be deleted"
+        )
+
+    db.delete(order)
+    db.commit()
+
+    return None
