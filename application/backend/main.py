@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 from models import orderCreate
+from database import engine
+import db_models
+
+db_models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
