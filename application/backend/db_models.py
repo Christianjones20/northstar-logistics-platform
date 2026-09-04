@@ -14,6 +14,6 @@ class Order(Base):
     shipment_type = Column(String, nullable=False)
     weighted_cost = Column(Float, nullable=False)  
     price = Column(Numeric(10, 2), nullable=False)
-    status = Column(String, nullable=False, default="pending")
+    status = Column(String, nullable=False, default="Pending")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
