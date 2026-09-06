@@ -6,5 +6,17 @@ __pycache__/
 venv/
 .venv/
 
+#terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+terraform.tfvars
+*.auto.tfvars
+terraform-state-backup.json
+
 #Enviroment Variables
 .env
+
+#Scripts
