@@ -5,13 +5,13 @@ data "azurerm_client_config" "current" {}
 # RESOURCE GROUP
 # --------------------------------------------------
 
-resource "azurerm_resource_group" "northstar_rg" {
-  name     = var.RESOURCE_GROUP_NAME
-  location = var.LOCATION
+resource "azurerm_resource_group" "northstar" {
+  name     = var.resource_group_name
+  location = var.location
 
   tags = {
     project     = "northstar-logistics-platform"
-    environment = var.ENVIRONMENT
+    environment = var.environment
     managed_by  = "terraform"
   }
 }
@@ -24,20 +24,20 @@ resource "azurerm_resource_group" "northstar_rg" {
 module "networking" {
   source = "../../modules/networking"
 
-  resource_group_name = azurerm_resource_group.northstar_rg.name
-  location            = azurerm_resource_group.northstar_rg.location
-  environment         = var.ENVIRONMENT
+  resource_group_name = azurerm_resource_group.northstar.name
+  location            = azurerm_resource_group.northstar.location
+  environment         = var.environment
 
-  vnet_name          = var.VNET_NAME
-  vnet_address_space = var.VNET_ADDRESS_SPACE
+  vnet_name          = var.vnet_name
+  vnet_address_space = var.vnet_address_space
 
-  aks_subnet_prefix     = var.AKS_SUBNET_PREFIX
-  data_subnet_prefix    = var.DATA_SUBNET_PREFIX
-  service_subnet_prefix = var.SERVICE_SUBNET_PREFIX
+  aks_subnet_prefix     = var.aks_subnet_prefix
+  data_subnet_prefix    = var.data_subnet_prefix
+  service_subnet_prefix = var.service_subnet_prefix
 
-  aks_nsg_name     = var.AKS_NSG_NAME
-  data_nsg_name    = var.DATA_NSG_NAME
-  service_nsg_name = var.SERVICE_NSG_NAME
+  aks_nsg_name     = var.aks_nsg_name
+  data_nsg_name    = var.data_nsg_name
+  service_nsg_name = var.service_nsg_name
 }
 
 
@@ -48,12 +48,12 @@ module "networking" {
 module "monitoring" {
   source = "../../modules/monitoring"
 
-  resource_group_name = azurerm_resource_group.northstar_rg.name
-  location            = azurerm_resource_group.northstar_rg.location
-  environment         = var.ENVIRONMENT
+  resource_group_name = azurerm_resource_group.northstar.name
+  location            = azurerm_resource_group.northstar.location
+  environment         = var.environment
 
   log_analytics_workspace_name = var.log_analytics_workspace_name
-  log_analytics_retention_days = var.log_analytics_retention_in_days
+  log_analytics_retention_days = var.log_analytics_retention_days
   log_analytics_sku            = var.log_analytics_sku
 }
 
@@ -65,25 +65,25 @@ module "monitoring" {
 module "container_platform" {
   source = "../../modules/container-platform"
 
-  resource_group_name = azurerm_resource_group.northstar_rg.name
-  location            = azurerm_resource_group.northstar_rg.location
-  environment         = var.ENVIRONMENT
+  resource_group_name = azurerm_resource_group.northstar.name
+  location            = azurerm_resource_group.northstar.location
+  environment         = var.environment
 
-  acr_name = var.ACR_NAME
-  acr_sku  = var.ACR_SKU
+  acr_name = var.acr_name
+  acr_sku  = var.acr_sku
 
-  aks_name          = var.AKS_CLUSTER_NAME
-  aks_dns_prefix    = var.AKS_DNS_PREFIX
-  aks_identity_name = var.AKS_IDENTITY_NAME
+  aks_name          = var.aks_name
+  aks_dns_prefix    = var.aks_dns_prefix
+  aks_identity_name = var.aks_identity_name
 
-  aks_node_count = var.AKS_NODE_COUNT
-  aks_vm_size    = var.AKS_NODE_VM_SIZE
+  aks_node_count = var.aks_node_count
+  aks_vm_size    = var.aks_vm_size
 
   aks_subnet_id = module.networking.aks_subnet_id
 
-  aks_pod_cidr       = var.AKS_POD_CIDR
-  aks_service_cidr   = var.AKS_SERVICE_CIDR
-  aks_dns_service_ip = var.AKS_DNS_SERVICE_IP
+  aks_pod_cidr       = var.aks_pod_cidr
+  aks_service_cidr   = var.aks_service_cidr
+  aks_dns_service_ip = var.aks_dns_service_ip
 
   log_analytics_workspace_id = module.monitoring.log_analytics_workspace_id
 }
@@ -96,9 +96,9 @@ module "container_platform" {
 module "database" {
   source = "../../modules/database"
 
-  resource_group_name = azurerm_resource_group.northstar_rg.name
-  location            = azurerm_resource_group.northstar_rg.location
-  environment         = var.ENVIRONMENT
+  resource_group_name = azurerm_resource_group.northstar.name
+  location            = azurerm_resource_group.northstar.location
+  environment         = var.environment
 
   vnet_id        = module.networking.vnet_id
   data_subnet_id = module.networking.data_subnet_id
@@ -126,9 +126,9 @@ module "database" {
 module "security" {
   source = "../../modules/Security"
 
-  resource_group_name = azurerm_resource_group.northstar_rg.name
-  location            = azurerm_resource_group.northstar_rg.location
-  environment         = var.ENVIRONMENT
+  resource_group_name = azurerm_resource_group.northstar.name
+  location            = azurerm_resource_group.northstar.location
+  environment         = var.environment
 
   tenant_id = data.azurerm_client_config.current.tenant_id
 
