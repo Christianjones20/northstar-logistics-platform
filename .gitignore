@@ -18,5 +18,6 @@ terraform-state-backup.json
 
 #Enviroment Variables
 .env
+github-federated-credential.json
 
 #Scripts
