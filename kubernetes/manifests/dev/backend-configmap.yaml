@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: northstar-backend-config
+  namespace: northstar
+data:
+  APP_ENV: "dev"
+  POSTGRES_HOST: "northstar-dev-postgres-server.postgres.database.azure.com"
+  POSTGRES_DB: "northstar_dev_db"
+  POSTGRES_USER: "northstaradmin"

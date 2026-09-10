@@ -228,13 +228,13 @@ variable "backend_identity_name" {
 variable "backend_namespace" {
   description = "Kubernetes namespace used by the NorthStar backend."
   type        = string
-  default     = "northstar-backend-dev"
+  default     = "northstar"
 }
 
 variable "backend_service_account_name" {
   description = "Kubernetes service account used by the NorthStar backend."
   type        = string
-  default     = "sa-backend-northstar-dev"
+  default     = "northstar-backend"
 }
 
 

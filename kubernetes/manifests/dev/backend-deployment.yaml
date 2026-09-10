@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: northstar-backend
+  namespace: northstar-backend-dev
+  labels:
+    app: northstar-backend
+    app.kubernetes.io/part-of: northstar-logistics
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: northstar-backend
+
+  template:
+    metadata:
+      labels:
+        app: northstar-backend
+        azure.workload.identity/use: "true"
+
+    spec:
+      serviceAccountName: sa-backend-northstar-dev
+
+      containers:
+        - name: backend
+          image: northstarlogisticsdevacr.azurecr.io/northstar-backend:v1
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: northstar-backend-config
+
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: northstar-backend-secrets
+                  key: DATABASE_URL
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /mnt/secrets-store
+              readOnly: true
+
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: northstar-backend-keyvault
