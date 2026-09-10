@@ -1,4 +1,4 @@
-name: Build Push and Deploy
+name: Build Push Sign and Deploy
 
 on:
   workflow_dispatch:
@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
 
       - name: Azure login
         uses: azure/login@v2
@@ -72,6 +75,30 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: "1"
+
+      - name: Sign backend image with Cosign
+        run: |
+          cosign sign --yes \
+            $ACR_LOGIN_SERVER/northstar-backend:${{ github.sha }}
+
+      - name: Sign frontend image with Cosign
+        run: |
+          cosign sign --yes \
+            $ACR_LOGIN_SERVER/northstar-frontend:${{ github.sha }}
+
+      - name: Verify backend signature
+        run: |
+          cosign verify \
+            $ACR_LOGIN_SERVER/northstar-backend:${{ github.sha }} \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            --certificate-identity-regexp="^https://github.com/Christianjones20/northstar-logistics-platform/"
+
+      - name: Verify frontend signature
+        run: |
+          cosign verify \
+            $ACR_LOGIN_SERVER/northstar-frontend:${{ github.sha }} \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            --certificate-identity-regexp="^https://github.com/Christianjones20/northstar-logistics-platform/"
 
   deploy:
     needs: build-and-scan
