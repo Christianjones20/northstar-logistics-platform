@@ -1,0 +1,75 @@
+name: Deploy to AKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  RESOURCE_GROUP: rg-northstar-dev
+  AKS_CLUSTER: aks-northstar-dev
+  ACR_LOGIN_SERVER: northstarlogisticsdevacr.azurecr.io
+  NAMESPACE: northstar
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$AKS_CLUSTER" \
+            --overwrite-existing
+
+      - name: Update backend image
+        run: |
+          kubectl set image deployment/northstar-backend \
+            backend=$ACR_LOGIN_SERVER/northstar-backend:${{ inputs.image_tag }} \
+            -n "$NAMESPACE"
+
+      - name: Update frontend image
+        run: |
+          kubectl set image deployment/northstar-frontend \
+            frontend=$ACR_LOGIN_SERVER/northstar-frontend:${{ inputs.image_tag }} \
+            -n "$NAMESPACE"
+
+      - name: Wait for backend rollout
+        run: |
+          kubectl rollout status deployment/northstar-backend \
+            -n "$NAMESPACE" \
+            --timeout=180s
+
+      - name: Wait for frontend rollout
+        run: |
+          kubectl rollout status deployment/northstar-frontend \
+            -n "$NAMESPACE" \
+            --timeout=180s
+
+      - name: Check backend health
+        run: |
+          curl --fail \
+            https://northstar.172.168.110.106.nip.io/health
+
+      - name: Check frontend
+        run: |
+          curl --fail --head \
+            https://northstar.172.168.110.106.nip.io
