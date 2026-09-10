@@ -1,4 +1,4 @@
-name: Build and Push Images
+name: Build Push and Deploy
 
 on:
   workflow_dispatch:
@@ -10,9 +10,12 @@ permissions:
 env:
   ACR_NAME: northstarlogisticsdevacr
   ACR_LOGIN_SERVER: northstarlogisticsdevacr.azurecr.io
+  RESOURCE_GROUP: rg-northstar-dev
+  AKS_CLUSTER: aks-northstar-dev
+  NAMESPACE: northstar
 
 jobs:
-  build-and-push:
+  build-push-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -51,3 +54,44 @@ jobs:
         run: |
           docker push \
             $ACR_LOGIN_SERVER/northstar-frontend:${{ github.sha }}
+
+      - name: Get AKS credentials
+        run: |
+          az aks get-credentials \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$AKS_CLUSTER" \
+            --overwrite-existing
+
+      - name: Deploy backend
+        run: |
+          kubectl set image deployment/northstar-backend \
+            backend=$ACR_LOGIN_SERVER/northstar-backend:${{ github.sha }} \
+            -n "$NAMESPACE"
+
+      - name: Deploy frontend
+        run: |
+          kubectl set image deployment/northstar-frontend \
+            frontend=$ACR_LOGIN_SERVER/northstar-frontend:${{ github.sha }} \
+            -n "$NAMESPACE"
+
+      - name: Wait for backend rollout
+        run: |
+          kubectl rollout status deployment/northstar-backend \
+            -n "$NAMESPACE" \
+            --timeout=180s
+
+      - name: Wait for frontend rollout
+        run: |
+          kubectl rollout status deployment/northstar-frontend \
+            -n "$NAMESPACE" \
+            --timeout=180s
+
+      - name: Backend health check
+        run: |
+          curl --fail \
+            https://northstar.172.168.110.106.nip.io/health
+
+      - name: Frontend health check
+        run: |
+          curl --fail --head \
+            https://northstar.172.168.110.106.nip.io
